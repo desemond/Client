@@ -1,56 +1,245 @@
 ﻿using Microsoft.Win32;
-using System.Collections.Generic;
-using System.IO;
-using System;
-using static System.Net.Mime.MediaTypeNames;
-using System.Xml.Linq;
-using Newtonsoft.Json;
-using Client;
 
-
-
-public class DayLevel
+class FilesFoldersAndRegStrings
 {
-    public string Date { get; set; }
-    public List<DataLevel> dataStorage { get; set; }
-
-    public DayLevel()
+    private List<string> regStrings = new List<string> {
+        @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+        @"HKEY_CURRENT_USER\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run",
+        @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows\Run",
+        @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce",
+        @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnceEx",
+        @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices",
+        @"HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServicesOnce",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnceEx",
+        @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServices",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\RunServicesOnce",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Active Setup\Installed Components",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Active Setup\Installed Components",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellServiceObjects",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Explorer\ShellServiceObjects",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\ShellServiceObjectDelayLoad",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\ShellServiceObjectDelayLoad",
+        @"HKEY_CURRENT_USER\Software\Classes\*\ShellEx\ContextMenuHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Wow6432Node\Classes\*\ShellEx\ContextMenuHandlers",
+        @"HKEY_CURRENT_USER\Software\Classes\Drive\ShellEx\ContextMenuHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Wow6432Node\Classes\Drive\ShellEx\ContextMenuHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Classes\*\ShellEx\PropertySheetHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Wow6432Node\Classes\*\ShellEx\PropertySheetHandlers",
+        @"HKEY_CURRENT_USER\Software\Classes\Directory\ShellEx\ContextMenuHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Classes\Directory\ShellEx\ContextMenuHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Wow6432Node\Classes\Directory\ShellEx\ContextMenuHandlers",
+        @"HKEY_CURRENT_USER\Software\Classes\Directory\Shellex\DragDropHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Classes\Directory\Shellex\DragDropHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Wow6432Node\Classes\Directory\Shellex\DragDropHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Classes\Directory\Shellex\CopyHookHandlers",
+        @"HKEY_CURRENT_USER\Software\Classes\Directory\Background\ShellEx\ContextMenuHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Classes\Directory\Background\ShellEx\ContextMenuHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Wow6432Node\Classes\Directory\Background\ShellEx\ContextMenuHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Classes\Folder\ShellEx\ContextMenuHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Wow6432Node\Classes\Folder\ShellEx\ContextMenuHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Classes\Folder\ShellEx\DragDropHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Wow6432Node\Classes\Folder\ShellEx\DragDropHandlers",
+        @"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers",
+        @"HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers",
+        @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Font Drivers",
+        @"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Drivers32",
+        @"HKEY_LOCAL_MACHINE\Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Drivers32",
+        @"HKEY_LOCAL_MACHINE\Software\Classes\Filter",
+        @"HKEY_LOCAL_MACHINE\Software\Classes\CLSID\{083863F1-70DE-11d0-BD40-00A0C911CE86}\Instance",
+        @"HKEY_LOCAL_MACHINE\Software\Wow6432Node\Classes\CLSID\{083863F1-70DE-11d0-BD40-00A0C911CE86}\Instance",
+        @"HKEY_LOCAL_MACHINE\Software\Classes\CLSID\{7ED96837-96F0-4812-B211-F13C24117ED3}\Instance",
+        @"HKEY_LOCAL_MACHINE\Software\Wow6432Node\Classes\CLSID\{7ED96837-96F0-4812-B211-F13C24117ED3}\Instance",
+        @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\KnownDlls",
+        @"HKEY_CURRENT_USER\Control Panel\Desktop\Scrnsave.exe",
+        @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters\Protocol_Catalog9\Catalog_Entries",
+        @"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinSock2\Parameters\Protocol_Catalog9\Catalog_Entries64",
+        @"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run",
+        @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run"
+    };
+    static private string appdataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+    static private string pathToUserFolder = Path.Combine(appdataPath, "Microsoft\\Windows\\Start Menu\\Programs\\Startup");
+    private List<string> Registry_File_Paths()
     {
-        dataStorage = new List<DataLevel>();
-    }
-    public void AddOrUpdateData(DataLevel newData)
-    {
-        var existingData = dataStorage.FirstOrDefault(d => d.Path == newData.Path);
-
-        if (existingData != null)
+        List<string> reg_Paths = new List<string>();
+        foreach (var path0 in Directory.GetDirectories("C:\\Users"))
         {
-            // Обновляем существующие данные
-            existingData.Size = newData.Size;
-            existingData.type = newData.type;
-            existingData.Quantity = newData.Quantity;
-            existingData.status = newData.status;
-            existingData.checkTime = newData.checkTime;
-            existingData.lastWriteTime = newData.lastWriteTime;
+            try
+            {
+                foreach (var path in Directory.GetFiles(path0))
+                {
+                    if (File.Exists(path))
+                    {
+                        reg_Paths.Add(path);
+                    }
+                    else
+                    {
+                        Console.WriteLine("user path error");
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
-        else
+        foreach (var path in Directory.GetFiles("C:\\Windows\\ServiceProfiles\\LocalService"))
         {
-            // Добавляем новые данные
-            dataStorage.Add(newData);
+            if (File.Exists(path))
+            {
+                reg_Paths.Add(path);
+            }
         }
-    }
-    public static List<DayLevel> LoadFromFile(string filePath)
-    {
-        if (!File.Exists(filePath))
-            return new List<DayLevel>();
+        foreach (var path in Directory.GetFiles("C:\\Windows\\ServiceProfiles\\NetworkService"))
+        {
+            if (File.Exists(path))
+            {
+                reg_Paths.Add(path);
+            }
+        }
 
-        var jsonData = File.ReadAllText(filePath);
-        return JsonConvert.DeserializeObject<List<DayLevel>>(jsonData);
+        foreach (var path in Directory.GetFiles("C:\\Windows\\System32\\config"))
+        {
+            if (File.Exists(path))
+            {
+                reg_Paths.Add((string)path);
+            }
+            else
+            {
+                Console.WriteLine("HKLM path error");
+            }
+        }
+        return reg_Paths;
+    }
+    private List<string> Task_Sheduler_Files_Path()
+    {
+        List<string> tS_Files_Path = new List<string>();
+        foreach (var path in Directory.GetFiles("C:\\Windows\\System32\\Tasks"))
+        {
+            if (File.Exists(path))
+            {
+                tS_Files_Path.Add(path);
+            }
+            else
+            {
+                Console.WriteLine("user path error");
+            }
+        }
+        return tS_Files_Path;
+    }
+    private List<string> Task_Sheduler_Dirs_Path()
+    {
+        List<string> tS_Dirs_Path = new List<string>();
+        foreach (var path in Directory.GetDirectories("C:\\Windows\\System32\\Tasks"))
+        {
+
+            if (Directory.Exists(path))
+            {
+                tS_Dirs_Path.Add(path);
+            }
+            else
+            {
+                Console.WriteLine("path error");
+            }
+        }
+        return tS_Dirs_Path;
+    }
+    private List<string> DirsStartupFoldersPath()
+    {
+        List<string> dirs_Paths = new List<string>();
+        foreach (var path0 in Directory.GetDirectories("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\StartUp"))
+        {
+            if (!Directory.Exists(path0))
+            {
+                dirs_Paths.Add(path0);
+            }
+            else
+            {
+                Console.WriteLine("Error with startup folder folders");
+            }
+        }
+        foreach (var path0 in Directory.GetDirectories(pathToUserFolder))
+        {
+            if (!Directory.Exists(path0))
+            {
+                dirs_Paths.Add(path0);
+            }
+            else
+            {
+                Console.WriteLine(" Error with startup folder folders");
+            }
+        }
+        return dirs_Paths;
+    }
+    private List<string> FilesStartupFoldersPath()
+    {
+        List<string> dirs_Paths = new List<string>();
+        foreach (var path0 in Directory.GetFiles("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\StartUp"))
+        {
+            if (!Directory.Exists(path0))
+            {
+                dirs_Paths.Add(path0);
+            }
+            else
+            {
+                Console.WriteLine(" Error with startup folder folders");
+            }
+        }
+        foreach (var path0 in Directory.GetFiles(pathToUserFolder))
+        {
+            if (!Directory.Exists(path0))
+            {
+                dirs_Paths.Add(path0);
+            }
+            else
+            {
+                Console.WriteLine(" Error with startup folder folders");
+            }
+        }
+        return dirs_Paths;
     }
 
-    public static void SaveToFile(List<DayLevel> dayLevels, string filePath)
+    public List<path_with_comment> AllPathes()
     {
-        var jsonData = JsonConvert.SerializeObject(dayLevels, Formatting.Indented);
-        File.WriteAllText(filePath, jsonData);
+        List<path_with_comment> paths = new List<path_with_comment>();
+        foreach (var str in regStrings)
+        {
+            paths.Add(new path_with_comment(str, "registry string"));
+        }
+        foreach (var str in Registry_File_Paths())
+        {
+            paths.Add(new path_with_comment(str, "file registry path"));
+        }
+        foreach (var str in Task_Sheduler_Files_Path())
+        {
+            paths.Add(new path_with_comment(str, "file task sheduler path"));
+        }
+        foreach (var str in FilesStartupFoldersPath())
+        {
+            paths.Add(new path_with_comment(str, "file startap folder path"));
+        }
+        foreach (var str in Task_Sheduler_Dirs_Path())
+        {
+            paths.Add(new path_with_comment(str, "dir task sheduler path"));
+        }
+        foreach (var str in DirsStartupFoldersPath())
+        {
+            paths.Add(new path_with_comment(str, "dir startap folder path"));
+        }
+        return paths;
+    }
+}
+public class path_with_comment
+{
+    public string Path { get; set; }
+    public string Comment { get; set; }
+    public path_with_comment(string text, string comment)
+    {
+        Path = text;
+        Comment = comment;
     }
 }
 
@@ -63,7 +252,6 @@ public class DataLevel
     public List<bool> status { get; set; }
     public List<DateTime> checkTime { get; set; }
     public List<DateTime> lastWriteTime { get; set; }
-
     public DataLevel()
     {
         Size = new List<string>();
@@ -71,57 +259,20 @@ public class DataLevel
         checkTime = new List<DateTime>();
         lastWriteTime = new List<DateTime>();
     }
-
-}
-
-
-
-
-
-class Client
-{
-    private string _host = "localhost";
-
-    static long GetDirectorySize(string path)
+    public DataLevel(path_with_comment Path_comm)
     {
-        long size = 0;
-
-        // Получаем информацию о папке
-        DirectoryInfo directoryInfo = new DirectoryInfo(path);
-
-        // Запрашиваем все файлы в папке и добавляем их размер
-        FileInfo[] files = directoryInfo.GetFiles("*", SearchOption.AllDirectories);
-        foreach (FileInfo file in files)
-        {
-            size += file.Length;
-        }
-
-        return size;
-    }
-    static string GetParentKey(string fullKey)
-    {
-        int lastIndex = fullKey.LastIndexOf('\\');
-        if (lastIndex != -1)
-        {
-            return fullKey.Substring(0, lastIndex);
-        }
-        return fullKey; // или fullKey
-    }
-    static DataLevel createFirstExample(AllPaths Path_comm)
-    {
-        var data = new DataLevel();
         DateTime dateZero = new DateTime();
-        data.Path = Path_comm.Path;
-        data.type = Path_comm.Comment;
-        data.status.Add(true);
-        data.checkTime.Add(DateTime.Now);
+        Path = Path_comm.Path;
+        type = Path_comm.Comment;
+        status.Add(true);
+        checkTime.Add(DateTime.Now);
         if (Path_comm.Comment.Contains("file"))
         {
             if (File.Exists(Path_comm.Path))
             {
-                data.Size.Add(new FileInfo(Path_comm.Path).Length.ToString());
-                data.lastWriteTime.Add(File.GetLastWriteTime(Path_comm.Path));
-                data.Quantity = 1;
+                Size.Add(new FileInfo(Path_comm.Path).Length.ToString());
+                lastWriteTime.Add(File.GetLastWriteTime(Path_comm.Path));
+                Quantity = 1;
             }
         }
         else if (Path_comm.Comment.Contains("dir"))
@@ -129,9 +280,9 @@ class Client
             if (Directory.Exists(Path_comm.Path))
             {
                 DirectoryInfo directoryInfo = new DirectoryInfo(Path_comm.Path);
-                data.Size.Add (GetDirectorySize(Path_comm.Path).ToString());
-                data.lastWriteTime.Add(directoryInfo.LastWriteTime);
-                data.Quantity = directoryInfo.GetFiles().Length+ directoryInfo.GetDirectories().Length;
+                Size.Add(Client.GetDirectorySize(Path_comm.Path).ToString());
+                lastWriteTime.Add(directoryInfo.LastWriteTime);
+                Quantity = directoryInfo.GetFiles().Length + directoryInfo.GetDirectories().Length;
             }
         }
         else if (Path_comm.Comment.Contains("registry string"))
@@ -145,15 +296,15 @@ class Client
                     if (subKey != null)
                     {
 
-                        data.Quantity = (subKey.SubKeyCount);
-                        data.lastWriteTime.Add(DateTime.FromFileTimeUtc((long)(int)subKey.GetValue("LastWriteTime", 0)));
+                        Quantity = (subKey.SubKeyCount);
+                        lastWriteTime.Add(DateTime.FromFileTimeUtc((long)(int)subKey.GetValue("LastWriteTime", 0)));
                     }
                     else
                     {
-                        data.Path = GetParentKey(Path_comm.Path);
-                        data.Quantity = 0;
-                        data.Size.Add( "0");
-                        data.lastWriteTime.Add(dateZero);
+                        Path = Client.GetParentKey(Path_comm.Path);
+                        Quantity = 0;
+                        Size.Add("0");
+                        lastWriteTime.Add(dateZero);
                     }
                 }
             }
@@ -164,193 +315,52 @@ class Client
                 {
                     if (subKey != null)
                     {
-                        data.Quantity = (subKey.SubKeyCount);
-                        data.lastWriteTime.Add(DateTime.FromFileTimeUtc((long)(int)subKey.GetValue("LastWriteTime", 0)));
+                        Quantity = (subKey.SubKeyCount);
+                        lastWriteTime.Add(DateTime.FromFileTimeUtc((long)(int)subKey.GetValue("LastWriteTime", 0)));
                     }
                     else
                     {
-                        data.Path = GetParentKey(Path_comm.Path);
-                        data.Quantity = 0;
-                        data.Size.Add("0");
-                        data.lastWriteTime.Add(dateZero);
+                        Path = Client.GetParentKey(Path_comm.Path);
+                        Quantity = 0;
+                        Size.Add("0");
+                        lastWriteTime.Add(dateZero);
                     }
                 }
             }
             else
             {
-                data.Quantity = 0;
+                Quantity = 0;
             }
         }
-        return data;
-
     }
-    
-    static DayLevel createFirstDay(List<path_with_comment> paths)
+
+}
+
+class Client
+{
+    static public long GetDirectorySize(string path)
     {
-        DayLevel lastDay = new DayLevel();
-        lastDay.Date = (DateOnly.FromDateTime(DateTime.Now)).ToString();
-        foreach (var path_with_comment in paths)
+        long size = 0;
+        DirectoryInfo directoryInfo = new DirectoryInfo(path);
+        FileInfo[] files = directoryInfo.GetFiles("*", SearchOption.AllDirectories);
+        foreach (FileInfo file in files)
         {
-            lastDay.dataStorage.Add(createFirstExample(path_with_comment));
+            size += file.Length;
         }
-        return lastDay;
+        return size;
     }
-    static DayLevel createDays(DayLevel day)
+    static public string GetParentKey(string fullKey)
     {
-        DayLevel anotherDay = new DayLevel();
-        anotherDay.Date = (DateOnly.FromDateTime(DateTime.Now)).ToString();
-        
-        foreach (var data in day.dataStorage)
+        int lastIndex = fullKey.LastIndexOf('\\');
+        if (lastIndex != -1)
         {
-            path_with_comment paths = new path_with_comment(data.Path,data.type);
-            anotherDay.dataStorage.Add(createFirstExample(paths));
+            return fullKey.Substring(0, lastIndex);
         }
-        return anotherDay;
+        return fullKey;
     }
-    static DataLevel check(DataLevel data) 
-    {
-        DateTime dateZero = new DateTime();
-        if (data.type.Contains("file"))
-        {
-            if (File.Exists(data.Path))
-            {
-                if (data.Size[data.Size.Count -1] == new FileInfo(data.Path).Length.ToString()
-                    && data.lastWriteTime[data.lastWriteTime.Count - 1] == File.GetLastWriteTime(data.Path))
-                {
-                    data.status.Add(true);
-                    data.checkTime.Add(DateTime.Now);
-
-                }
-                else
-                {
-                    data.status.Add(false);
-                    data.checkTime.Add(DateTime.Now);
-                }
-            }
-
-        }
-        else if (data.type.Contains("dir"))
-        {
-            if (Directory.Exists(data.Path))
-            {
-                DirectoryInfo directoryInfo = new DirectoryInfo(data.Path);
-                if (data.Size[data.Size.Count -1] == GetDirectorySize(data.Path).ToString()
-                   && data.lastWriteTime[data.lastWriteTime.Count - 1] == directoryInfo.LastWriteTime
-                   && data.Quantity== directoryInfo.GetFiles().Length + directoryInfo.GetDirectories().Length)
-                {
-                    data.status.Add(true);
-                    data.checkTime.Add(DateTime.Now);
-                }
-                else
-                {
-                    data.status.Add(false);
-                    data.checkTime.Add(DateTime.Now);
-                }
-            }
-        }
-        else if (data.type.Contains("registry string"))
-        {
-            if (data.Path.StartsWith(@"HKEY_CURRENT_USER"))
-            {
-                string subKeyPath = data.Path.Replace(@"HKEY_CURRENT_USER\", "");
-                using (RegistryKey subKey = Registry.CurrentUser.OpenSubKey(subKeyPath))
-                {
-                    if (subKey != null)
-                    {
-                        if (data.Quantity == (subKey.SubKeyCount)
-                        && data.lastWriteTime[data.lastWriteTime.Count - 1] == DateTime.FromFileTimeUtc((long)(int)subKey.GetValue("LastWriteTime", 0))
-                        )//&& data.Size[data.Size.Count - 1] == subKey.GetValue(( subKey.GetSubKeyNames())[0]).ToString())
-                        {
-                            data.status.Add(true);
-                            data.checkTime.Add(DateTime.Now);
-
-                        }
-                        else
-                        {
-                            data.status.Add(false);
-                            data.checkTime.Add(DateTime.Now);
-                        }
-                    }
-                    else
-                    {
-                        data.Path = GetParentKey(data.Path);
-                        data.status.Add(false);
-                        data.checkTime.Add(DateTime.Now);
-                    }
-
-                }
-            }
-            else if (data.Path.StartsWith(@"HKEY_LOCAL_MACHINE"))
-            {
-                string subKeyPath = data.Path.Replace(@"HKEY_CURRENT_USER\", "");
-                using (RegistryKey subKey = Registry.CurrentUser.OpenSubKey(subKeyPath))
-                {
-                    if (subKey != null)
-                    {
-                        if (data.Quantity == (subKey.SubKeyCount)
-                        && data.lastWriteTime[data.lastWriteTime.Count - 1] == DateTime.FromFileTimeUtc((long)(int)subKey.GetValue("LastWriteTime", 0))
-                        )//&& data.Size[data.Size.Count - 1] == subKey.GetValue((subKey.GetSubKeyNames())[0]).ToString())
-                        {
-                            data.status.Add(true);
-                            data.checkTime.Add(DateTime.Now);
-                            data.lastWriteTime.Add(dateZero);
-                        }
-                        else
-                        {
-                            data.status.Add(false);
-                            data.checkTime.Add(DateTime.Now);
-                            data.lastWriteTime.Add(dateZero);
-                        }
-                    }
-                    else
-                    {
-                        data.Path = GetParentKey(data.Path);
-                        data.status.Add(false);
-                        data.checkTime.Add(DateTime.Now);
-                    }
-                }
-            }
-        }
-        return data;
-    }
-
     static async Task Main()
     {
-        string PathToJsonFolder = "\\\\SERV\\programm";
-        string computerName = System.Environment.MachineName + ".json";
-        string PathToJsonFile = Path.Combine(PathToJsonFolder, computerName);
-        Console.WriteLine(PathToJsonFile);
-        FilesFoldersAndRegStrings firstday = new FilesFoldersAndRegStrings();
-        while (true)
-        {
-            List<DayLevel> _days = new List<DayLevel>();
-            if (File.Exists(PathToJsonFile))
-            {
-
-                _days = DayLevel.LoadFromFile(PathToJsonFile);
-                if (_days[_days.Count - 1].Date != (DateOnly.FromDateTime(DateTime.Now)).ToString())
-                {
-                    _days.Add(createDays(_days[_days.Count - 1]));
-                    await Task.Delay(1000);
-                }
-                else if (_days[_days.Count - 1].Date == (DateOnly.FromDateTime(DateTime.Now)).ToString())
-                {
-                    foreach (var data in _days[_days.Count - 1].dataStorage)
-                    {
-                        (_days[_days.Count - 1]).AddOrUpdateData(check(data));
-                        DayLevel.SaveToFile(_days, PathToJsonFile);
-                    }
-                }
-
-                await Task.Delay(60000);
-            }
-            else
-            {
-                _days.Add(createFirstDay(firstday.allPathes()));
-                DayLevel.SaveToFile(_days, PathToJsonFile);
-            }
-        }
-
-
+        FilesFoldersAndRegStrings clientStartPaths = new FilesFoldersAndRegStrings();
+        List<DataLevel> data = new List<DataLevel>();
     }
 }

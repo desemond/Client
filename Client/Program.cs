@@ -1,4 +1,14 @@
 ﻿using Microsoft.Win32;
+using Newtonsoft.Json;
+using System;
+using System.IO;
+using System.Net.Sockets;
+using System.Net;
+using System.Net.WebSockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
 
 class FilesFoldersAndRegStrings
 {
@@ -60,186 +70,48 @@ class FilesFoldersAndRegStrings
         @"HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run",
         @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run"
     };
+
     static private string appdataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
     static private string pathToUserFolder = Path.Combine(appdataPath, "Microsoft\\Windows\\Start Menu\\Programs\\Startup");
-    private List<string> Registry_File_Paths()
+
+    private List<string> CollectPaths(Func<string, bool> existenceCheck, string rootPath, bool isDirectory = false)
     {
-        List<string> reg_Paths = new List<string>();
-        foreach (var path0 in Directory.GetDirectories("C:\\Users"))
+        List<string> paths = new List<string>();
+
+        try
         {
-            try
+            var entries = isDirectory ? Directory.GetDirectories(rootPath) : Directory.GetFiles(rootPath);
+            foreach (var path in entries)
             {
-                foreach (var path in Directory.GetFiles(path0))
+                if (existenceCheck(path))
                 {
-                    if (File.Exists(path))
-                    {
-                        reg_Paths.Add(path);
-                    }
-                    else
-                    {
-                        Console.WriteLine("user path error");
-                    }
+                    paths.Add(path);
                 }
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
         }
-        foreach (var path in Directory.GetFiles("C:\\Windows\\ServiceProfiles\\LocalService"))
+        catch (UnauthorizedAccessException ex)
         {
-            if (File.Exists(path))
-            {
-                reg_Paths.Add(path);
-            }
-        }
-        foreach (var path in Directory.GetFiles("C:\\Windows\\ServiceProfiles\\NetworkService"))
-        {
-            if (File.Exists(path))
-            {
-                reg_Paths.Add(path);
-            }
+            Console.WriteLine($"Access denied: {ex.Message}");
         }
 
-        foreach (var path in Directory.GetFiles("C:\\Windows\\System32\\config"))
-        {
-            if (File.Exists(path))
-            {
-                reg_Paths.Add((string)path);
-            }
-            else
-            {
-                Console.WriteLine("HKLM path error");
-            }
-        }
-        return reg_Paths;
-    }
-    private List<string> Task_Sheduler_Files_Path()
-    {
-        List<string> tS_Files_Path = new List<string>();
-        foreach (var path in Directory.GetFiles("C:\\Windows\\System32\\Tasks"))
-        {
-            if (File.Exists(path))
-            {
-                tS_Files_Path.Add(path);
-            }
-            else
-            {
-                Console.WriteLine("user path error");
-            }
-        }
-        return tS_Files_Path;
-    }
-    private List<string> Task_Sheduler_Dirs_Path()
-    {
-        List<string> tS_Dirs_Path = new List<string>();
-        foreach (var path in Directory.GetDirectories("C:\\Windows\\System32\\Tasks"))
-        {
-
-            if (Directory.Exists(path))
-            {
-                tS_Dirs_Path.Add(path);
-            }
-            else
-            {
-                Console.WriteLine("path error");
-            }
-        }
-        return tS_Dirs_Path;
-    }
-    private List<string> DirsStartupFoldersPath()
-    {
-        List<string> dirs_Paths = new List<string>();
-        foreach (var path0 in Directory.GetDirectories("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\StartUp"))
-        {
-            if (!Directory.Exists(path0))
-            {
-                dirs_Paths.Add(path0);
-            }
-            else
-            {
-                Console.WriteLine("Error with startup folder folders");
-            }
-        }
-        foreach (var path0 in Directory.GetDirectories(pathToUserFolder))
-        {
-            if (!Directory.Exists(path0))
-            {
-                dirs_Paths.Add(path0);
-            }
-            else
-            {
-                Console.WriteLine(" Error with startup folder folders");
-            }
-        }
-        return dirs_Paths;
-    }
-    private List<string> FilesStartupFoldersPath()
-    {
-        List<string> dirs_Paths = new List<string>();
-        foreach (var path0 in Directory.GetFiles("C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\StartUp"))
-        {
-            if (!Directory.Exists(path0))
-            {
-                dirs_Paths.Add(path0);
-            }
-            else
-            {
-                Console.WriteLine(" Error with startup folder folders");
-            }
-        }
-        foreach (var path0 in Directory.GetFiles(pathToUserFolder))
-        {
-            if (!Directory.Exists(path0))
-            {
-                dirs_Paths.Add(path0);
-            }
-            else
-            {
-                Console.WriteLine(" Error with startup folder folders");
-            }
-        }
-        return dirs_Paths;
-    }
-
-    public List<path_with_comment> AllPathes()
-    {
-        List<path_with_comment> paths = new List<path_with_comment>();
-        foreach (var str in regStrings)
-        {
-            paths.Add(new path_with_comment(str, "registry string"));
-        }
-        foreach (var str in Registry_File_Paths())
-        {
-            paths.Add(new path_with_comment(str, "file registry path"));
-        }
-        foreach (var str in Task_Sheduler_Files_Path())
-        {
-            paths.Add(new path_with_comment(str, "file task sheduler path"));
-        }
-        foreach (var str in FilesStartupFoldersPath())
-        {
-            paths.Add(new path_with_comment(str, "file startap folder path"));
-        }
-        foreach (var str in Task_Sheduler_Dirs_Path())
-        {
-            paths.Add(new path_with_comment(str, "dir task sheduler path"));
-        }
-        foreach (var str in DirsStartupFoldersPath())
-        {
-            paths.Add(new path_with_comment(str, "dir startap folder path"));
-        }
         return paths;
     }
-}
-public class path_with_comment
-{
-    public string Path { get; set; }
-    public string Comment { get; set; }
-    public path_with_comment(string text, string comment)
+
+    public List<string> GetAllPaths()
     {
-        Path = text;
-        Comment = comment;
+        List<string> allPaths = new List<string>();
+
+        allPaths.AddRange(regStrings);
+        allPaths.AddRange(CollectPaths(File.Exists, "C:\\Windows\\ServiceProfiles\\LocalService"));
+        allPaths.AddRange(CollectPaths(File.Exists, "C:\\Windows\\ServiceProfiles\\NetworkService"));
+        allPaths.AddRange(CollectPaths(File.Exists, "C:\\Windows\\System32\\config"));
+        allPaths.AddRange(CollectPaths(File.Exists, "C:\\Windows\\System32\\Tasks"));
+        allPaths.AddRange(CollectPaths(Directory.Exists, "C:\\Windows\\System32\\Tasks", true));
+        allPaths.AddRange(CollectPaths(File.Exists, "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\StartUp"));
+        allPaths.AddRange(CollectPaths(File.Exists, pathToUserFolder));
+        allPaths.AddRange(CollectPaths(Directory.Exists, "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\StartUp", true));
+        allPaths.AddRange(CollectPaths(Directory.Exists, pathToUserFolder, true));
+        return allPaths;
     }
 }
 
@@ -247,120 +119,269 @@ public class DataLevel
 {
     public string Path { get; set; }
     public List<string> Size { get; set; }
-    public string type { get; set; }
+    public string Type { get; set; }
     public int Quantity { get; set; }
-    public List<bool> status { get; set; }
-    public List<DateTime> checkTime { get; set; }
-    public List<DateTime> lastWriteTime { get; set; }
+    public List<bool> Status { get; set; }
+    public List<DateTime> CheckTime { get; set; }
+    public List<DateTime> LastWriteTime { get; set; }
+    public Dictionary<string, object> RegistryValues { get; set; }
+
     public DataLevel()
     {
         Size = new List<string>();
-        status = new List<bool>();
-        checkTime = new List<DateTime>();
-        lastWriteTime = new List<DateTime>();
+        Status = new List<bool>();
+        CheckTime = new List<DateTime>();
+        LastWriteTime = new List<DateTime>();
+        RegistryValues = new Dictionary<string, object>();
     }
-    public DataLevel(path_with_comment Path_comm)
+    public DataLevel(string path)
     {
-        DateTime dateZero = new DateTime();
-        Path = Path_comm.Path;
-        type = Path_comm.Comment;
-        status.Add(true);
-        checkTime.Add(DateTime.Now);
-        if (Path_comm.Comment.Contains("file"))
-        {
-            if (File.Exists(Path_comm.Path))
-            {
-                Size.Add(new FileInfo(Path_comm.Path).Length.ToString());
-                lastWriteTime.Add(File.GetLastWriteTime(Path_comm.Path));
-                Quantity = 1;
-            }
-        }
-        else if (Path_comm.Comment.Contains("dir"))
-        {
-            if (Directory.Exists(Path_comm.Path))
-            {
-                DirectoryInfo directoryInfo = new DirectoryInfo(Path_comm.Path);
-                Size.Add(Client.GetDirectorySize(Path_comm.Path).ToString());
-                lastWriteTime.Add(directoryInfo.LastWriteTime);
-                Quantity = directoryInfo.GetFiles().Length + directoryInfo.GetDirectories().Length;
-            }
-        }
-        else if (Path_comm.Comment.Contains("registry string"))
-        {
+        Size = new List<string>();
+        Status = new List<bool>();
+        CheckTime = new List<DateTime>();
+        LastWriteTime = new List<DateTime>();
+        RegistryValues = new Dictionary<string, object>();
 
-            if (Path_comm.Path.StartsWith(@"HKEY_CURRENT_USER"))
-            {
-                string subKeyPath = Path_comm.Path.Replace(@"HKEY_CURRENT_USER\", "");
-                using (RegistryKey subKey = Registry.CurrentUser.OpenSubKey(subKeyPath))
-                {
-                    if (subKey != null)
-                    {
+        Path = path;
+        CheckTime.Add(DateTime.Now);
+        DetermineTypeAndProcess(path);
+    }
 
-                        Quantity = (subKey.SubKeyCount);
-                        lastWriteTime.Add(DateTime.FromFileTimeUtc((long)(int)subKey.GetValue("LastWriteTime", 0)));
-                    }
-                    else
-                    {
-                        Path = Client.GetParentKey(Path_comm.Path);
-                        Quantity = 0;
-                        Size.Add("0");
-                        lastWriteTime.Add(dateZero);
-                    }
-                }
-            }
-            else if (Path_comm.Path.StartsWith(@"HKEY_LOCAL_MACHINE"))
-            {
-                string subKeyPath = Path_comm.Path.Replace(@"HKEY_CURRENT_USER\", "");
-                using (RegistryKey subKey = Registry.CurrentUser.OpenSubKey(subKeyPath))
-                {
-                    if (subKey != null)
-                    {
-                        Quantity = (subKey.SubKeyCount);
-                        lastWriteTime.Add(DateTime.FromFileTimeUtc((long)(int)subKey.GetValue("LastWriteTime", 0)));
-                    }
-                    else
-                    {
-                        Path = Client.GetParentKey(Path_comm.Path);
-                        Quantity = 0;
-                        Size.Add("0");
-                        lastWriteTime.Add(dateZero);
-                    }
-                }
-            }
-            else
-            {
-                Quantity = 0;
-            }
+    private void DetermineTypeAndProcess(string path)
+    {
+        if (File.Exists(path))
+        {
+            Type = "file";
+            ProcessFile(path);
+        }
+        else if (Directory.Exists(path))
+        {
+            Type = "directory";
+            ProcessDirectory(path);
+        }
+        else
+        {
+            Type = "registry";
+            ProcessRegistry(path);
         }
     }
 
+    private void ProcessFile(string filePath)
+    {
+        if (File.Exists(filePath))
+        {
+            Size.Add(new FileInfo(filePath).Length.ToString());
+            LastWriteTime.Add(File.GetLastWriteTime(filePath));
+            Quantity = 1;
+        }
+    }
+
+    private void ProcessDirectory(string directoryPath)
+    {
+        if (Directory.Exists(directoryPath))
+        {
+            DirectoryInfo dirInfo = new DirectoryInfo(directoryPath);
+            Size.Add(GetDirectorySize(directoryPath).ToString());
+            LastWriteTime.Add(dirInfo.LastWriteTime);
+            Quantity = dirInfo.GetFiles().Length + dirInfo.GetDirectories().Length;
+        }
+    }
+
+    private void ProcessRegistry(string registryPath)
+    {
+        string rootKey = registryPath.Split('\\')[0];
+        string subKeyPath = registryPath.Replace($"{rootKey}\\", "");
+        Size.Add("0");
+
+        RegistryKey rootRegistryKey = rootKey switch
+        {
+            "HKEY_CURRENT_USER" => Registry.CurrentUser,
+            "HKEY_LOCAL_MACHINE" => Registry.LocalMachine,
+            _ => null
+        };
+
+        if (rootRegistryKey != null)
+        {
+            string currentPath = subKeyPath;
+            while (!string.IsNullOrEmpty(currentPath))
+            {
+                using (RegistryKey subKey = rootRegistryKey.OpenSubKey(currentPath))
+                {
+                    if (subKey != null)
+                    {
+                        // Успешно открыли ключ
+                        Quantity = subKey.SubKeyCount;
+                        foreach (string valueName in subKey.GetValueNames())
+                        {
+                            RegistryValues[valueName] = subKey.GetValue(valueName);
+                        }
+                        LastWriteTime.Add(DateTime.MinValue);
+                    
+                        Status.Add(true); // Обновление статуса как успешного
+                        return; // Завершаем метод
+                    }
+                }
+
+                // Если текущий путь недоступен, поднимаемся на уровень выше
+                int lastSeparatorIndex = currentPath.LastIndexOf('\\');
+                if (lastSeparatorIndex > 0)
+                {
+                    currentPath = currentPath.Substring(0, lastSeparatorIndex);
+                }
+                else
+                {
+                    // Если больше некуда подниматься, обнуляем путь
+                    currentPath = string.Empty;
+                }
+            }
+        }
+        // Если дошли сюда, значит ключ не найден
+        Status.Add(false);
+    }
+
+
+    private long GetDirectorySize(string folderPath)
+    {
+        return Directory.EnumerateFiles(folderPath, "*.*", SearchOption.AllDirectories)
+                        .Select(f => new FileInfo(f).Length)
+                        .Sum();
+    }
+}
+public class DayLevel
+{
+    public DateOnly Day { get; set; }
+    public List<DataLevel> Data { get; set; }
+
+    public DayLevel(List<DataLevel> data)
+    {
+        this.Day = DateOnly.FromDateTime(DateTime.Now);
+        this.Data = data;
+    }
+}
+public class ClientLevel
+{
+    public string ClientName { get; set; }
+    public List<DayLevel> Days { get; set; }
+
+    public ClientLevel()
+    {
+        this.ClientName = "client1";
+        this.Days = new List<DayLevel>();
+    }
+
+    public ClientLevel(string name, List<DayLevel> days)
+    {
+        this.ClientName = name;
+        this.Days = days;
+    }
 }
 
 class Client
 {
-    static public long GetDirectorySize(string path)
+    private static async Task SendClientLevel(ClientWebSocket webSocket, ClientLevel client)
     {
-        long size = 0;
-        DirectoryInfo directoryInfo = new DirectoryInfo(path);
-        FileInfo[] files = directoryInfo.GetFiles("*", SearchOption.AllDirectories);
-        foreach (FileInfo file in files)
-        {
-            size += file.Length;
-        }
-        return size;
+        string jsonData = JsonConvert.SerializeObject(client);
+        var buffer = Encoding.UTF8.GetBytes(jsonData);
+        var segment = new ArraySegment<byte>(buffer);
+        await webSocket.SendAsync(segment, WebSocketMessageType.Text, true, CancellationToken.None);
     }
-    static public string GetParentKey(string fullKey)
+    static string GetLocalIPAddress()
     {
-        int lastIndex = fullKey.LastIndexOf('\\');
-        if (lastIndex != -1)
+        string localIP = string.Empty;
+        try
         {
-            return fullKey.Substring(0, lastIndex);
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                // Check for IPv4 addresses only
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    localIP = ip.ToString();
+                    break; // Return the first IPv4 address found
+                }
+            }
         }
-        return fullKey;
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex.Message}");
+        }
+        return localIP;
     }
+    private static async Task ReceiveMessages(ClientWebSocket webSocket)
+    {
+        var buffer = new byte[1024 * 64];
+
+        while (webSocket.State == WebSocketState.Open)
+        {
+            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            string message = Encoding.UTF8.GetString(buffer, 0, result.Count);
+            ClientLevel clnt = new ClientLevel();
+            clnt.ClientName = GetLocalIPAddress();
+            Console.WriteLine(GetLocalIPAddress());
+            try
+            {
+                List<DataLevel> data = new List<DataLevel>();
+                Console.WriteLine(message);
+
+                if (message == "first run")
+                {
+                    FilesFoldersAndRegStrings paths = new FilesFoldersAndRegStrings();
+                    foreach (var path in paths.GetAllPaths())
+                    {
+                        data.Add(new DataLevel(path));
+                    }
+                    clnt.Days.Add(new DayLevel(data));
+                    await SendClientLevel(webSocket, clnt);
+                }
+                if (message == "who are you")
+                {
+                    
+                }
+                
+            }
+            catch (JsonException)
+            {
+                Console.WriteLine("Invalid JSON message received.");
+            }
+        }
+    }
+
+    private static async Task ConnectWithRetry(string serverUri)
+    {
+        while (true)
+        {
+            ClientWebSocket webSocket = new ClientWebSocket(); // Новый экземпляр WebSocket при каждой попытке подключения
+
+            try
+            {
+                await webSocket.ConnectAsync(new Uri(serverUri), CancellationToken.None);
+                Console.WriteLine("Connected to the WebSocket server.");
+
+                // Если соединение успешно, начинаем цикл получения сообщений
+                while (webSocket.State == WebSocketState.Open)
+                {
+                    await ReceiveMessages(webSocket);
+                }
+            }
+            catch (WebSocketException)
+            {
+                Console.WriteLine("Server not available. Retrying in 5 seconds...");
+                await Task.Delay(5000);
+            }
+            finally
+            {
+                // Закрываем WebSocket перед следующей попыткой подключения
+                if (webSocket.State != WebSocketState.Closed && webSocket.State != WebSocketState.Aborted)
+                {
+                    await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", CancellationToken.None);
+                }
+            }
+        }
+    }
+
+
     static async Task Main()
     {
-        FilesFoldersAndRegStrings clientStartPaths = new FilesFoldersAndRegStrings();
-        List<DataLevel> data = new List<DataLevel>();
+        await ConnectWithRetry("ws://localhost:5000/");
     }
 }

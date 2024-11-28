@@ -307,42 +307,67 @@ class Client
         }
         return localIP;
     }
+    public static bool IsDeserializable<T>(string input)
+    {
+        try
+        {
+            JsonConvert.DeserializeObject<T>(input);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
     private static async Task ReceiveMessages(ClientWebSocket webSocket)
     {
         var buffer = new byte[1024 * 64];
-
-        while (webSocket.State == WebSocketState.Open)
+        WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+        string message = Encoding.UTF8.GetString(buffer, 0, result.Count);
+        ClientLevel clnt = new ClientLevel();
+        clnt.ClientName = GetLocalIPAddress();
+        Console.WriteLine(GetLocalIPAddress());
+        try
         {
-            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-            string message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-            ClientLevel clnt = new ClientLevel();
-            clnt.ClientName = GetLocalIPAddress();
-            Console.WriteLine(GetLocalIPAddress());
-            try
-            {
-                List<DataLevel> data = new List<DataLevel>();
-                Console.WriteLine(message);
+            List<DataLevel> data = new List<DataLevel>();
+            //Console.WriteLine(message);
 
-                if (message == "first run")
-                {
-                    FilesFoldersAndRegStrings paths = new FilesFoldersAndRegStrings();
-                    foreach (var path in paths.GetAllPaths())
-                    {
-                        data.Add(new DataLevel(path));
-                    }
-                    clnt.Days.Add(new DayLevel(data));
-                    await SendClientLevel(webSocket, clnt);
-                }
-                if (message == "who are you")
-                {
-                    
-                }
-                
-            }
-            catch (JsonException)
+            if (message == "Are you there?")
             {
-                Console.WriteLine("Invalid JSON message received.");
+                await SocketExtensions.SendTextMessageAsync(webSocket, GetLocalIPAddress().ToString());
+                
+                return;
             }
+            if (message == "first run")
+            {
+                
+                FilesFoldersAndRegStrings paths = new FilesFoldersAndRegStrings();
+                foreach (var path in paths.GetAllPaths())
+                {
+                    data.Add(new DataLevel(path));
+                }
+                clnt.Days.Add(new DayLevel(data));
+                await SendClientLevel(webSocket, clnt);
+                return;
+            }
+            if (IsDeserializable<List<string>>(message))
+            {
+                List<string> strings = new List<string>();
+                
+                strings = JsonConvert.DeserializeObject<List<string>>(message);
+                foreach (var path in strings)
+                {
+                    data.Add(new DataLevel(path));
+                }
+                clnt.Days.Add(new DayLevel(data));
+                await SendClientLevel(webSocket, clnt);
+                Console.WriteLine("rar");
+            }
+
+        }
+        catch (JsonException)
+        {
+            Console.WriteLine("Invalid JSON message received.");
         }
     }
 

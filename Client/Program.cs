@@ -144,6 +144,7 @@ public class DataLevel
 
         Path = path;
         CheckTime.Add(DateTime.Now);
+        Status.Add(true);
         DetermineTypeAndProcess(path);
     }
 
@@ -358,7 +359,9 @@ class Client
                 foreach (var path in strings)
                 {
                     data.Add(new DataLevel(path));
+                    Console.WriteLine(path);
                 }
+                
                 clnt.Days.Add(new DayLevel(data));
                 await SendClientLevel(webSocket, clnt);
                 Console.WriteLine("rar");

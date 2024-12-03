@@ -224,15 +224,16 @@ public class DataLevel
                 }
 
                 // Если текущий путь недоступен, поднимаемся на уровень выше
-                int lastSeparatorIndex = currentPath.LastIndexOf('\\');
+                int lastSeparatorIndex = registryPath.LastIndexOf('\\');
                 if (lastSeparatorIndex > 0)
                 {
-                    currentPath = currentPath.Substring(0, lastSeparatorIndex);
+                    registryPath = registryPath.Substring(0, lastSeparatorIndex);
+                    ProcessRegistry(registryPath);
                 }
                 else
                 {
                     // Если больше некуда подниматься, обнуляем путь
-                    currentPath = string.Empty;
+                    registryPath = string.Empty;
                 }
             }
         }
